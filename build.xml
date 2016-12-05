@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+
+<project name="ReaderValidator" basedir="." default="build-jar">
+
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="binary" />
+	<property name="deploy.dir" value="deploy" />
+	<property name="class.dir" value="${build.dir}" />
+
+	<target name="prepare" depends="clean">
+		<mkdir dir="${deploy.dir}/lib" />
+		<mkdir dir="${build.dir}" />
+		<copy todir="${deploy.dir}/lib">
+			<fileset dir="${basedir}/lib">
+				<include name="**/*.jar" />
+				<exclude name="*junit*" />
+				<exclude name="*hamcrest*" />
+			</fileset>
+		</copy>
+		<copy todir="${deploy.dir}">
+			<fileset dir="${basedir}/lib">
+				<include name="**/*.dll" />
+			</fileset>
+		</copy>
+
+	</target>
+	<target name="clean" description="clean output">
+		<delete failonerror="false">
+			<fileset dir="${build.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</delete>
+		<delete dir="deploy" failonerror="false">
+			<fileset dir="${build.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</delete>
+	</target>
+
+	<path id="library-classpath">
+		<fileset dir="${basedir}/lib">
+			<include name="*.*" />
+
+		</fileset>
+	</path>
+
+	<target name="build" depends="prepare" description="Compile source files...">
+
+		<javac destdir="${build.dir}" srcdir="${src.dir}" source="1.8" target="1.8" debug="true" deprecation="false" optimize="false" failonerror="true" includeantruntime="true">
+			<classpath refid="library-classpath" />
+			<include name="main/**" />
+		</javac>
+	</target>
+
+	<target name="build-tests" depends="build" description="Compile test files...">
+
+		<javac destdir="${build.dir}" srcdir="${src.dir}" source="1.8" target="1.8" debug="true" deprecation="false" optimize="false" failonerror="true" includeantruntime="true">
+			<classpath refid="library-classpath" />
+			<classpath path="${class.dir}" />
+			<include name="test/**" />
+		</javac>
+	</target>
+
+	<target name="test" description="Running all JUnit tests" depends="build-tests">
+		<junit>
+			<classpath refid="library-classpath" />
+			<classpath path="${build.dir}" />
+
+			<batchtest>
+				<fileset dir="${build.dir}">
+					<include name="test/**/*Test*" />
+				</fileset>
+			</batchtest>
+			<sysproperty key="java.library.path" path="${build.dir}/lib" />
+			<formatter type="brief" usefile="false" />
+		</junit>
+
+	</target>
+
+
+	<target name="build-jar" description="Building an JAR file" depends="build">
+		<path id="build-classpath">
+			<fileset dir="${deploy.dir}/lib">
+				<include name="*.*" />
+			</fileset>
+		</path>
+		<manifestclasspath property="lib.list" jarfile="${deploy.dir}/ReaderSimulator.jar">
+			<classpath refid="build-classpath" />
+		</manifestclasspath>
+		<jar destfile="${deploy.dir}/ReaderSimulator.jar" basedir="${build.dir}" includes="/**/*.class">
+			<manifest>
+				<attribute name="Main-Class" value="main.Exec" />
+				<attribute name="Class-Path" value="${lib.list}" />
+			</manifest>
+		</jar>
+
+	</target>
+
+</project>
